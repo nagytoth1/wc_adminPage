@@ -21,34 +21,28 @@ as p INNER JOIN `wp_wc_customer_lookup` as c
 ON c.`customer_id`= p.customer_id 
 INNER JOIN  `wp_woocommerce_order_items` as pr 
 ON pr.order_item_id=p.order_item_id
-
-SELECT c.last_name, c.first_name, p.product_qty, pr.order_item_name FROM `wp_wc_order_product_lookup` 
-as p INNER JOIN `wp_wc_customer_lookup` as c 
-ON c.`customer_id`= p.customer_id 
-INNER JOIN  `wp_woocommerce_order_items` as pr 
-ON pr.order_item_id=p.order_item_id
 WHERE c.first_name = '*keresznév*' AND c.last_name = '*vezetéknév*'
 ORDER BY 3 DESC;
 
 -- Rendelésenként a végösszegek 
-SELECT p.order_id as "Rendelési azonosító", c.last_name as "Vezetéknév", c.first_name as "Keresztnév", ord.total_sales as "Rendelés végösszege (HUF)" FROM `wp_wc_order_product_lookup` 
-as p INNER JOIN `wp_wc_customer_lookup` as c 
-ON c.`customer_id`= p.customer_id 
-INNER JOIN  `wp_wc_order_stats` as ord
-WHERE p.date_created BETWEEN '2022-11-02 11:02' AND '2022-11-20 15:30'
-ON ord.order_id = p.order_id
-GROUP BY p.order_id;
+SELECT ord.order_id, c.last_name, c.first_name, ord.total_sales
+FROM wp_wc_customer_lookup as c 
+INNER JOIN wp_wc_order_stats as ord 
+ON ord.customer_id = c.customer_id 
+WHERE c.email='mail@chimp.com' 
+AND ord.date_created BETWEEN '2022-01-01' AND now() 
+GROUP BY 4 
+ORDER BY 4 DESC;
 
 -- Rendelések végösszegei user-enként, adott user rendeléseinek összeg
-SELECT p.order_id as "Rendelési azonosító", c.last_name as "Vezetéknév", c.first_name as "Keresztnév", SUM(ord.total_sales) as "Rendelés végösszege (HUF)" FROM `wp_wc_order_product_lookup` 
-as p INNER JOIN `wp_wc_customer_lookup` as c 
-ON c.`customer_id`= p.customer_id 
-INNER JOIN  `wp_wc_order_stats` as ord
-ON ord.order_id = p.order_id
-WHERE p.date_created BETWEEN '2022-11-02 11:02' AND '2022-11-20 15:30'
-ORDER BY 4;
+SELECT ord.order_id, c.last_name, c.first_name, SUM(ord.total_sales) 
+FROM wp_wc_customer_lookup as c 
+INNER JOIN wp_wc_order_stats as ord 
+ON ord.customer_id = c.customer_id 
+WHERE c.email='mail@chimp.com' 
+AND ord.date_created BETWEEN '2022-01-01' AND now();
 
--- ugyanez, csak szűrés időpontra hülyeség
+-- ugyanez, csak szűrés időpontra
 SELECT p.order_id as "Rendelési azonosító", p.date_created as "Rendelés időpontja", c.last_name as "Vezetéknév", c.first_name as "Keresztnév", SUM(ord.total_sales) as "Rendelés végösszege (HUF)" FROM `wp_wc_order_product_lookup` 
 as p INNER JOIN `wp_wc_customer_lookup` as c 
 ON c.`customer_id`= p.customer_id 
