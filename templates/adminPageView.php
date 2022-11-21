@@ -8,6 +8,7 @@
 
 <body>
 	<h2>Adatok lekérdezése</h2>
+	<?php date_default_timezone_set("Europe/Budapest");?>
 	<form method="POST">
 		<table>
 			<tr>
@@ -26,13 +27,13 @@
 				<td><label for="query">Válaszd ki a lekérdezést: </label></td>
 				<td>
 					<select name="query" id="query" style="width: auto;">
-						<option value="query1">Termékekből adott időszakban mennyit rendelt</option>
-						<option value="query2">Rendelésenként a végösszegek</option>
-						<option value="query3">Adott felhasználó(k) rendeléseinek összege</option>
-						<option value="query4">Adott felhasználó(k) rendeléseinek átlaga</option>
-						<option value="query5">Adott felhasználó(k) legutóbbi rendelése</option>
-						<option value="query6">Adott vásárlók mikor vásároltak</option>
-						<option value="query7">Adott vásárlók vásárlásainak száma</option>
+						<option value="query1">Termékekből mennyit rendelt</option>
+						<option value="query2">Minden egyes rendelés végösszege</option>
+						<option value="query3">Rendeléseinek összege</option>
+						<option value="query4">Rendeléseinek átlaga</option>
+						<option value="query5">Legutóbbi rendelése</option>
+						<option value="query6">Rendeléseinek időpontja</option>
+						<option value="query7">Vásárlásainak száma</option>
 					</select>
 				</td>
 			</tr>
@@ -45,7 +46,6 @@
 </body>
 </html>
 <?php
-
 if (isset($_POST['execute'])) {
 	require_once 'queries.php';
 	switch ($_POST['query']) {

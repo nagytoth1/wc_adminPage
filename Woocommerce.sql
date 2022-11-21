@@ -1,40 +1,38 @@
-/*`wp_wc_order_product_lookup` - táblában kiadja:
-customer_id foreign key wc_customer_lookup -> ki vett  
-product_id -> mit vett
-product_qty -> mennyit vett
-order_id -> egyedi rendelési azonosító 
+/* `wp_wc_order_product_lookup` - táblában kiadja:
+        customer_id foreign key wc_customer_lookup -> ki vett  
+        product_id -> mit vett
+        product_qty -> mennyit vett
+        order_id -> egyedi rendelési azonosító 
 
-wp_wc_customer_lookup - táblában kiadja:
-neve, email, mikor vette, honnan vette stb..- */
+    `wp_wc_customer_lookup` - táblában kiadja:
+        neve, email, mikor vette, honnan vette stb.. 
+    `wp_woocommerce_order_items` - táblában kiadja:
+        termék id + neve
+    `wp
+*/
 
-SELECT c.last_name, c.first_name, p.product_qty FROM `wp_wc_order_product_lookup`
- as p INNER JOIN `wp_wc_customer_lookup` as c
- ON c.`customer_id`= p.customer_id
-
-SELECT c.last_name, c.first_name, p.product_qty, pr.sku FROM `wp_wc_order_product_lookup`
-as p INNER JOIN `wp_wc_customer_lookup` as c ON c.`customer_id`= p.customer_id INNER JOIN
-`wp_wc_product_meta_lookup` as pr ON pr.product_id=p.product_id
-
--- Melyik termékből mennyit rendelt
-SELECT c.last_name, c.first_name, p.product_qty, pr.order_item_name FROM `wp_wc_order_product_lookup` 
-as p INNER JOIN `wp_wc_customer_lookup` as c 
+-- 1. Melyik termékből mennyit rendelt
+SELECT c.last_name, c.first_name, pr.order_item_name, SUM(p.product_qty) as 'sum_product_qty'
+FROM `wp_wc_order_product_lookup` as p 
+INNER JOIN `wp_woocommerce_order_items` as pr 
+ON pr.order_item_id=p.order_item_id 
+INNER JOIN `wp_wc_customer_lookup` as c 
 ON c.`customer_id`= p.customer_id 
-INNER JOIN  `wp_woocommerce_order_items` as pr 
-ON pr.order_item_id=p.order_item_id
-WHERE c.first_name = '*keresznév*' AND c.last_name = '*vezetéknév*'
-ORDER BY 3 DESC;
+WHERE c.email='mail@chimp.com' 
+AND p.date_created BETWEEN '2022-01-01' AND now() 
+GROUP BY 3
+ORDER BY 4 DESC;
 
--- Rendelésenként a végösszegek 
+-- 2. Rendelésenként a végösszegek 
 SELECT ord.order_id, c.last_name, c.first_name, ord.total_sales
 FROM wp_wc_customer_lookup as c 
 INNER JOIN wp_wc_order_stats as ord 
 ON ord.customer_id = c.customer_id 
-WHERE c.email='mail@chimp.com' 
-AND ord.date_created BETWEEN '2022-01-01' AND now() 
-GROUP BY 4 
+WHERE c.email='mail@chimp.com'
+AND ord.date_created BETWEEN '2022-01-01' AND now()
 ORDER BY 4 DESC;
 
--- Rendelések végösszegei user-enként, adott user rendeléseinek összeg
+-- 3. Rendelések végösszegei user-enként, adott user rendeléseinek összeg
 SELECT ord.order_id, c.last_name, c.first_name, SUM(ord.total_sales) 
 FROM wp_wc_customer_lookup as c 
 INNER JOIN wp_wc_order_stats as ord 
@@ -42,51 +40,39 @@ ON ord.customer_id = c.customer_id
 WHERE c.email='mail@chimp.com' 
 AND ord.date_created BETWEEN '2022-01-01' AND now();
 
--- ugyanez, csak szűrés időpontra
-SELECT p.order_id as "Rendelési azonosító", p.date_created as "Rendelés időpontja", c.last_name as "Vezetéknév", c.first_name as "Keresztnév", SUM(ord.total_sales) as "Rendelés végösszege (HUF)" FROM `wp_wc_order_product_lookup` 
-as p INNER JOIN `wp_wc_customer_lookup` as c 
-ON c.`customer_id`= p.customer_id 
+--4. átlagos kosárérték, rendelések átlaga userenként, Adott Felhasználó átlagban mennyit vásárol
+SELECT c.last_name, c.first_name , AVG(ord.total_sales) as 'avg_total_sales'
+FROM wp_wc_customer_lookup as c 
+INNER JOIN  wp_wc_order_stats as ord
+ON ord.customer_id = c.customer_id
+WHERE c.email = 'mail@chimp.com'
+AND ord.date_created BETWEEN '2022-01-01' AND now();
+
+--5. utolsó rendelés adott időszakban:
+SELECT c.last_name, c.first_name, MAX(ord.date_created) as 'max_date'
+FROM `wp_wc_customer_lookup` as c 
 INNER JOIN  `wp_wc_order_stats` as ord
-ON ord.order_id = p.order_id
-WHERE p.date_created BETWEEN '2022-11-02 11:02' AND '2022-11-20 15:30'
-GROUP BY p.customer_id
-ORDER BY 4;
-
---átlagos kosárérték, rendelések átlaga userenként, Adott Felhasználó átlagban mennyit vásárol
-SELECT c.last_name as "Vezetéknév", c.first_name as "Keresztnév", AVG(ord.net_total) as "Rendelés átlaga (HUF)" FROM `wp_wc_order_product_lookup` 
-as p INNER JOIN `wp_wc_customer_lookup` as c 
-ON c.`customer_id`= p.customer_id 
-INNER JOIN  `wp_wc_order_stats` as ord
-ON ord.order_id = p.order_id
-WHERE p.date_created BETWEEN '2022-11-02 11:02' AND '2022-11-20 15:30' 
-GROUP BY p.customer_id
-ORDER BY 3;
-
---utolsó rendelés adott időszakban:
-SELECT MAX(p.date_created) as "Rendelés időpontja", c.last_name as "Vezetéknév", c.first_name as "Keresztnév" FROM `wp_wc_order_product_lookup` 
-as p INNER JOIN `wp_wc_customer_lookup` as c 
-ON c.`customer_id`= p.customer_id 
-INNER JOIN  `wp_wc_order_stats` as ord
-ON ord.order_id = p.order_id
-WHERE p.date_created BETWEEN '2022-11-02 11:02' AND '2022-11-20 15:30'
-GROUP BY p.customer_id;
+ON ord.customer_id = c.customer_id
+WHERE c.email = 'mail@chimp.com' 
+AND ord.date_created BETWEEN '2022-01-01' AND now();
 
 
--- Vásárlások időpontjai:
-SELECT p.date_created as "Vásárlások időpontjai", c.last_name as "Vezetéknév", c.first_name as "Keresztnév" FROM `wp_wc_order_product_lookup` 
-as p INNER JOIN `wp_wc_customer_lookup` as c 
-ON c.`customer_id`= p.customer_id 
-INNER JOIN  `wp_wc_order_stats` as ord
-ON ord.order_id = p.order_id
-WHERE p.date_created BETWEEN '2022-11-02 11:02' AND '2022-11-20 15:30'
-GROUP BY p.date_created;
+--6. Vásárlások időpontjai:
+SELECT c.last_name , c.first_name, ord.date_created, ord.order_id 
+FROM wp_wc_order_stats as ord 
+INNER JOIN wp_wc_customer_lookup as c 
+ON c.customer_id = ord.customer_id 
+WHERE c.email = 'mail@chimp.com' 
+AND ord.date_created BETWEEN '2022-01-01' AND now();
 
--- Vásárlások száma vizsgált időszakban:
-SELECT COUNT(ord.order_id) as "Vásárlások száma", c.last_name as "Vezetéknév", c.first_name as "Keresztnév" FROM `wp_wc_order_stats` 
-as ord INNER JOIN `wp_wc_customer_lookup` as c 
-ON c.`customer_id`= ord.customer_id 
-WHERE ord.date_created BETWEEN '2022-11-02 11:02' AND '2022-11-20 15:30'
-GROUP BY ord.customer_id;
+
+--7. Vásárlások száma vizsgált időszakban:
+SELECT c.last_name, c.first_name, COUNT(ord.order_id) as 'count_orders' 
+FROM wp_wc_order_stats as ord 
+INNER JOIN wp_wc_customer_lookup as c 
+ON c.customer_id=ord.customer_id 
+WHERE c.email='mail@chimp.com' 
+AND ord.date_created BETWEEN '2022-01-01' AND now();
 
 --Wordpress fájl: php-ban plugins-ba betenni, header rész, hogy pluginként kezelje wordpress
 --adminpage létrehozása, SQL-management Wordpress-ben -> API: formelemeket generál, asszociatív tömbben elemei formelemeknek

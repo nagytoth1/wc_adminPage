@@ -37,3 +37,4 @@ class AdminPageView {
 		return ob_get_clean();
 	}
 }
+?>
