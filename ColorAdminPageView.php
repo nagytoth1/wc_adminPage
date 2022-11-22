@@ -1,6 +1,6 @@
 <?php
 
-class AdminPageView {
+class ColorAdminPageView {
 	private $data = [];
 
 	public function __construct()
@@ -22,7 +22,7 @@ class AdminPageView {
 	/**
 	 * Render content using the given template file
 	 * @param  string $template Template file name without extension
-	 * @return string           Generated HTML markup
+	 * @return string Generated HTML markup
 	 */
 	public function render($template)
 	{
